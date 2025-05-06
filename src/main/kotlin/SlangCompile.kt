@@ -70,15 +70,19 @@ abstract class SlangCompile @Inject constructor(
     }
 
     private fun doCompile(files: Collection<File>) {
+        val compilerExecutableFile = compilerExecutable.get().asFile.absoluteFile
+        val profile = compilerOptions.profile.get()
+        val target = compilerOptions.target.get()
+
         val defaultSpec = objectFactory.newInstance(DefaultExecSpec::class.java)
-        defaultSpec.executable(compilerExecutable.get().asFile.absolutePath)
+        defaultSpec.executable(compilerExecutableFile)
         defaultSpec.args("-profile")
-        defaultSpec.args(compilerOptions.profile.get())
+        defaultSpec.args(profile)
         defaultSpec.args("-target")
-        defaultSpec.args(compilerOptions.target.get().optionName)
-        debugMessage("Compiler: ${compilerExecutable.get().asFile.absolutePath}")
-        debugMessage("Profile: ${compilerOptions.profile.get()}")
-        debugMessage("Target: ${compilerOptions.target.get().optionName}")
+        defaultSpec.args(target.optionName)
+        debugMessage("Compiler: ${compilerExecutableFile}")
+        debugMessage("Profile: $profile")
+        debugMessage("Target: ${target.optionName}")
         debugMessage("Compiler options: ${defaultSpec.args}")
         debugMessage()
         debugMessage("Compiling ${files.size} files...")
@@ -90,7 +94,7 @@ abstract class SlangCompile @Inject constructor(
             defaultSpec.copyTo(execAction)
             execAction.args(it.absolutePath)
             execAction.args("-o")
-            execAction.args(outputDirectory.file("${it.nameWithoutExtension}.spv"))
+            execAction.args(outputDirectory.file("${it.nameWithoutExtension}.${target.fileExtension}").asFile.absolutePath)
             execAction.execute()
         }
 
