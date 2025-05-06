@@ -8,9 +8,9 @@ import org.gradle.api.tasks.*
 import org.gradle.internal.instrumentation.api.annotations.ToBeReplacedByLazyProperty
 import org.gradle.process.internal.DefaultExecSpec
 import org.gradle.process.internal.ExecActionFactory
+import org.gradle.work.FileChange
 import org.gradle.work.InputChanges
 import org.gradle.work.NormalizeLineEndings
-import java.io.File
 import javax.inject.Inject
 
 abstract class SlangCompile @Inject constructor(
@@ -62,14 +62,13 @@ abstract class SlangCompile @Inject constructor(
     fun compile(inputs: InputChanges) {
         if (inputs.isIncremental) {
             debugMessage("Performing incremental compilation...\n")
-            doCompile(inputs.getFileChanges(stableSources).map { it.file })
         } else {
             debugMessage("Performing full compilation...\n")
-            doCompile(source.files)
         }
+        doCompile(inputs.getFileChanges(stableSources).toList())
     }
 
-    private fun doCompile(files: Collection<File>) {
+    private fun doCompile(fileChanges: List<FileChange>) {
         val compilerExecutableFile = compilerExecutable.get().asFile.absoluteFile
         val profile = compilerOptions.profile.get()
         val target = compilerOptions.target.get()
@@ -80,23 +79,32 @@ abstract class SlangCompile @Inject constructor(
         defaultSpec.args(profile)
         defaultSpec.args("-target")
         defaultSpec.args(target.optionName)
-        debugMessage("Compiler: ${compilerExecutableFile}")
+        debugMessage("Compiler: $compilerExecutableFile")
         debugMessage("Profile: $profile")
         debugMessage("Target: ${target.optionName}")
         debugMessage("Compiler options: ${defaultSpec.args}")
         debugMessage()
-        debugMessage("Compiling ${files.size} files...")
+        debugMessage("Compiling ${fileChanges.size} files...")
 
         val outputDirectory = outputDir.get()
-        files.forEach {
-            debugMessage("Compiling $it...")
-            val execAction = execActionFactory.newExecAction()
-            defaultSpec.copyTo(execAction)
-            execAction.args(it.absolutePath)
-            execAction.args("-o")
-            execAction.args(outputDirectory.file("${it.nameWithoutExtension}.${target.fileExtension}").asFile.absolutePath)
-            execAction.execute()
-        }
+        fileChanges.asSequence()
+            .map { it.normalizedPath to it.file }
+            .filter { (_, file) -> file.extension == "slang" }
+            .forEach { (path, file) ->
+                val pathWithoutExtension = path.removeSuffix(".slang")
+                check(pathWithoutExtension.length < path.length) { "File $file is not a .slang file" }
+                val outputFile =
+                    outputDirectory.file("${pathWithoutExtension}.${target.fileExtension}").asFile.absoluteFile
+                outputFile.parentFile.mkdirs()
+
+                debugMessage("Compiling $file...")
+                val execAction = execActionFactory.newExecAction()
+                defaultSpec.copyTo(execAction)
+                execAction.args(file.absolutePath)
+                execAction.args("-o")
+                execAction.args(outputFile.path)
+                execAction.execute()
+            }
 
         didWork = true
     }

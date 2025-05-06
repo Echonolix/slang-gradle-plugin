@@ -31,7 +31,6 @@ class SlangPlugin : LanguageBasePlugin() {
                 this.source(slangSourceDirectorySet)
             }
 
-
             slangSourceDirectorySet.destinationDirectory.convention(target.layout.buildDirectory.dir("slang"))
             slangSourceDirectorySet.compiledBy(slangCompile) { it.outputDir }
 
