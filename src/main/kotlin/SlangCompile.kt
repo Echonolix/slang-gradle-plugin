@@ -72,6 +72,7 @@ abstract class SlangCompile @Inject constructor(
         val compilerExecutableFile = compilerExecutable.get().asFile.absoluteFile
         val profile = compilerOptions.profile.get()
         val target = compilerOptions.target.get()
+        val extraOptions = compilerOptions.extraOptions.get()
 
         val defaultSpec = objectFactory.newInstance(DefaultExecSpec::class.java)
         defaultSpec.executable(compilerExecutableFile)
@@ -103,6 +104,7 @@ abstract class SlangCompile @Inject constructor(
                 execAction.args(file.absolutePath)
                 execAction.args("-o")
                 execAction.args(outputFile.path)
+                execAction.args(extraOptions)
                 execAction.execute()
             }
 
