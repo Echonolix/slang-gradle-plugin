@@ -8,7 +8,6 @@ import org.gradle.language.base.plugins.LanguageBasePlugin
 import org.gradle.platform.base.ComponentType
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
-
 @Suppress("UnstableApiUsage")
 class SlangPlugin : LanguageBasePlugin() {
     @ComponentType

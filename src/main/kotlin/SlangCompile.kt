@@ -22,9 +22,6 @@ abstract class SlangCompile @Inject constructor(
     @get:InputFile
     abstract val compilerExecutable: RegularFileProperty
 
-//    @get:InputDirectory
-//    abstract val sourceDir: FileCollection
-
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
