@@ -6,6 +6,7 @@ import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.language.base.plugins.LanguageBasePlugin
 import org.gradle.platform.base.ComponentType
+import org.gradle.plugins.ide.idea.model.IdeaModel
 
 
 @Suppress("UnstableApiUsage")
@@ -13,7 +14,10 @@ class SlangPlugin : LanguageBasePlugin() {
     @ComponentType
     override fun apply(target: Project) {
         super.apply(target)
+        target.plugins.apply("idea")
+
         val extension = target.extensions.create<SlangExtension>("slang", target)
+        val ideaModel = target.extensions.getByType(IdeaModel::class.java)
 
         target.sourceSets.configureEach {
             val slangSourceDirectorySet = target.objects.sourceDirectorySet("slang", "slang")
@@ -48,6 +52,10 @@ class SlangPlugin : LanguageBasePlugin() {
 
             target.dependencies {
                 runtimeClasspathConfigurationName(slangCompile.map { target.files(it.outputDir.asFile) })
+            }
+
+            ideaModel.module {
+                sourceDirs.add(slangSrcDir.asFile)
             }
         }
     }
