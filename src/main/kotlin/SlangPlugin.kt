@@ -1,18 +1,14 @@
 package net.echonolix.slang
 
+import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
-import org.gradle.language.base.plugins.LanguageBasePlugin
-import org.gradle.platform.base.ComponentType
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
-@Suppress("UnstableApiUsage")
-class SlangPlugin : LanguageBasePlugin() {
-    @ComponentType
+class SlangPlugin : Plugin<Project> {
     override fun apply(target: Project) {
-        super.apply(target)
         target.plugins.apply("idea")
 
         val extension = target.extensions.create<SlangExtension>("slang", target)
