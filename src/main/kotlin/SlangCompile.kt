@@ -8,9 +8,11 @@ import org.gradle.api.tasks.*
 import org.gradle.internal.instrumentation.api.annotations.ToBeReplacedByLazyProperty
 import org.gradle.process.internal.DefaultExecSpec
 import org.gradle.process.internal.ExecActionFactory
+import org.gradle.work.ChangeType
 import org.gradle.work.FileChange
 import org.gradle.work.InputChanges
 import org.gradle.work.NormalizeLineEndings
+import java.io.File
 import javax.inject.Inject
 
 abstract class SlangCompile @Inject constructor(
@@ -88,14 +90,21 @@ abstract class SlangCompile @Inject constructor(
         debugMessage("Compiling ${fileChanges.size} files...")
 
         val outputDirectory = outputDir.get()
+
+        fun String.outputPath(): File =
+            outputDirectory.file("${this.removeSuffix(".slang")}.${target.fileExtension}").asFile.absoluteFile
+
         fileChanges.asSequence()
+            .filter { it.changeType == ChangeType.REMOVED }
+            .forEach { it.normalizedPath.outputPath().delete() }
+
+        fileChanges.asSequence()
+            .filter { it.changeType != ChangeType.REMOVED }
             .map { it.normalizedPath to it.file }
             .filter { (_, file) -> file.extension == "slang" }
             .forEach { (path, file) ->
-                val pathWithoutExtension = path.removeSuffix(".slang")
-                check(pathWithoutExtension.length < path.length) { "File $file is not a .slang file" }
-                val outputFile =
-                    outputDirectory.file("${pathWithoutExtension}.${target.fileExtension}").asFile.absoluteFile
+                check(path.removeSuffix(".slang").length < path.length) { "File $file is not a .slang file" }
+                val outputFile = path.outputPath()
                 outputFile.parentFile.mkdirs()
 
                 debugMessage("Compiling $file...")
