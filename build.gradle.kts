@@ -24,15 +24,6 @@ dependencies {
 
 }
 
-sourceSets.main {
-    java {
-
-    }
-    this.kotlin {
-        println(this.javaClass)
-    }
-}
-
 kotlin {
     sourceSets
 }

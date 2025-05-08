@@ -31,7 +31,7 @@ class SlangPlugin : LanguageBasePlugin() {
                 this.source(slangSourceDirectorySet)
             }
 
-            slangSourceDirectorySet.destinationDirectory.convention(target.layout.buildDirectory.dir("slang"))
+            slangSourceDirectorySet.destinationDirectory.convention(target.layout.buildDirectory.dir("slang/${name}"))
             slangSourceDirectorySet.compiledBy(slangCompile) { it.outputDir }
 
             (target.tasks.findByName(jarTaskName) as Jar?)?.apply {
