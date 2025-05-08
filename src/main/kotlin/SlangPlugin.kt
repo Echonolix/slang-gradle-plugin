@@ -42,6 +42,10 @@ class SlangPlugin : LanguageBasePlugin() {
                 from(slangCompile.map { it.source.asFileTree })
             }
 
+            (target.tasks.findByName(classesTaskName))?.apply {
+                dependsOn(slangCompile)
+            }
+
             target.dependencies {
                 runtimeClasspathConfigurationName(slangCompile.map { target.files(it.outputDir.asFile) })
             }
