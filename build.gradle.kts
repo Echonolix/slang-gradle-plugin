@@ -1,6 +1,6 @@
 allprojects {
     group = "net.echonolix"
-    version = "1.0-SNAPSHOT"
+    version = "0.0.1"
 
     repositories {
         mavenCentral()
@@ -16,22 +16,16 @@ plugins {
 java {
     withSourcesJar()
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(8))
     }
 }
 
-dependencies {
-
-}
-
-kotlin {
-    sourceSets
-}
 gradlePlugin {
     plugins {
-        create("slangn") {
+        create("slang") {
             id = "net.echonolix.slang-gradle-plugin"
             displayName = "slang-gradle-plugin"
+            description = "Gradle plugin adding support for the Slang Shading language."
             implementationClass = "net.echonolix.slang.SlangPlugin"
         }
     }
