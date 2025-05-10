@@ -5,9 +5,7 @@ import org.gradle.api.file.FileTree
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.tasks.*
-import org.gradle.internal.instrumentation.api.annotations.ToBeReplacedByLazyProperty
-import org.gradle.process.internal.DefaultExecSpec
-import org.gradle.process.internal.ExecActionFactory
+import org.gradle.process.ExecOperations
 import org.gradle.work.ChangeType
 import org.gradle.work.FileChange
 import org.gradle.work.InputChanges
@@ -26,16 +24,15 @@ abstract class SlangCompile @Inject constructor(
     abstract val outputDir: DirectoryProperty
 
     @get:Inject
-    abstract val execActionFactory: ExecActionFactory
+    abstract val objectFactory: ObjectFactory
 
     @get:Inject
-    abstract val objectFactory: ObjectFactory
+    abstract val execOperations: ExecOperations
 
     /**
      * {@inheritDoc}
      */
     @Internal("tracked via stableSources")
-    @ToBeReplacedByLazyProperty
     override fun getSource(): FileTree {
         return super.getSource()
     }
@@ -73,16 +70,10 @@ abstract class SlangCompile @Inject constructor(
         val target = compilerOptions.target.get()
         val extraOptions = compilerOptions.extraOptions.get()
 
-        val defaultSpec = objectFactory.newInstance(DefaultExecSpec::class.java)
-        defaultSpec.executable(compilerExecutableFile)
-        defaultSpec.args("-profile")
-        defaultSpec.args(profile)
-        defaultSpec.args("-target")
-        defaultSpec.args(target.optionName)
         debugMessage("Compiler: $compilerExecutableFile")
         debugMessage("Profile: $profile")
         debugMessage("Target: ${target.optionName}")
-        debugMessage("Compiler options: ${defaultSpec.args}")
+        debugMessage("Extra options: $extraOptions")
         debugMessage()
         debugMessage("Compiling ${fileChanges.size} files...")
 
@@ -105,13 +96,15 @@ abstract class SlangCompile @Inject constructor(
                 outputFile.parentFile.mkdirs()
 
                 debugMessage("Compiling $file...")
-                val execAction = execActionFactory.newExecAction()
-                defaultSpec.copyTo(execAction)
-                execAction.args(file.absolutePath)
-                execAction.args("-o")
-                execAction.args(outputFile.path)
-                execAction.args(extraOptions)
-                execAction.execute()
+                execOperations.exec {
+                    executable(compilerExecutableFile)
+                    args(
+                        "-profile", profile,
+                        "-target", target.optionName,
+                    )
+                    args(extraOptions)
+                    args(file.absolutePath, "-o", outputFile.path)
+                }
             }
 
         didWork = true
