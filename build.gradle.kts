@@ -22,11 +22,12 @@ java {
 
 gradlePlugin {
     plugins {
-        create("slang") {
+        create("slang-gradle-plugin") {
             id = "net.echonolix.slang-gradle-plugin"
-            displayName = "slang-gradle-plugin"
-            description = "Gradle plugin adding support for the Slang Shading language."
             implementationClass = "net.echonolix.slang.SlangPlugin"
+            displayName = "slang-gradle-plugin"
+            description = "A Gradle plugin adding support for the Slang Shading language."
+            tags.addAll("slang", "shader", "vulkan", "toolchain")
         }
     }
 }
