@@ -15,11 +15,11 @@ abstract class SlangCompilerOptions {
     abstract val extraOptions: ListProperty<String>
 
     @get:Input
-    abstract val debug: Property<Boolean>
+    abstract val debugLogging: Property<Boolean>
 
     init {
         target.convention(SlangCompileTarget.SPIR_V)
         profile.convention("glsl_450")
-        debug.convention(false)
+        debugLogging.convention(false)
     }
 }

@@ -49,7 +49,7 @@ abstract class SlangCompile @Inject constructor(
     }
 
     private fun debugMessage(message: String = "") {
-        if (compilerOptions.debug.get()) {
+        if (compilerOptions.debugLogging.get()) {
             println(message)
         }
     }
