@@ -26,6 +26,21 @@ class SlangPlugin : Plugin<Project> {
                 SlangCompile::class.java,
                 extension.compilerOptions
             )
+
+            val generateReflectionInfo = target.tasks.register(
+                getTaskName("generate", "spirvReflectionInfo"),
+                SpirvReflectTask::class.java
+            ) {
+                inputFiles.convention(slangCompile.map { it.outputs.files })
+                spirVReflectExecutable.convention(extension.spirVReflectExecutable)
+            }
+
+            slangCompile.configure {
+                if (extension.generateReflectionInfo.get()) {
+                    finalizedBy(generateReflectionInfo)
+                }
+            }
+
             slangCompile.configure {
                 this.source(slangSourceDirectorySet)
             }
