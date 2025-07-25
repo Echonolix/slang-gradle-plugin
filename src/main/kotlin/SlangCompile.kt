@@ -105,7 +105,7 @@ abstract class SlangCompile @Inject constructor(
                 if (generateReflectionInfo) {
                     debugMessage("Generating reflection info for $spvFile...")
                     val outputFile = spvFile.parentFile.resolve("${spvFile.nameWithoutExtension}.yaml")
-                    ProcessBuilder(spirvReflectPath, "-y", spvFile.path)
+                    ProcessBuilder(spirvReflectPath, "-v", "1", "-y", spvFile.path)
                         .redirectOutput(ProcessBuilder.Redirect.to(outputFile))
                         .start()
                 } else {
