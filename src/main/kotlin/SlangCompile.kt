@@ -2,8 +2,6 @@ package net.echonolix.slang
 
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileTree
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.tasks.*
 import org.gradle.process.ExecOperations
 import org.gradle.work.ChangeType
@@ -17,14 +15,8 @@ abstract class SlangCompile @Inject constructor(
     @get:Nested
     val compilerOptions: SlangCompilerOptions
 ) : SourceTask() {
-    @get:InputFile
-    abstract val compilerExecutable: RegularFileProperty
-
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
-
-    @get:Inject
-    abstract val objectFactory: ObjectFactory
 
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -44,10 +36,6 @@ abstract class SlangCompile @Inject constructor(
     @get:InputFiles
     val stableSources = project.files(this.source)
 
-    init {
-        compilerExecutable.convention(project.slang.compilerExecutable)
-    }
-
     private fun debugMessage(message: String = "") {
         if (compilerOptions.debugLogging.get()) {
             println(message)
@@ -65,10 +53,12 @@ abstract class SlangCompile @Inject constructor(
     }
 
     private fun doCompile(fileChanges: List<FileChange>) {
-        val compilerExecutableFile = compilerExecutable.get().asFile.absoluteFile
+        val compilerExecutableFile = compilerOptions.compilerExecutable.get().asFile.absoluteFile
         val profile = compilerOptions.profile.get()
         val target = compilerOptions.target.get()
         val extraOptions = compilerOptions.extraOptions.get()
+        val generateReflectionInfo = compilerOptions.generateReflectionInfo.get()
+        val spirvReflectPath = compilerOptions.spirVReflectExecutable.get().asFile.absolutePath
 
         debugMessage("Compiler: $compilerExecutableFile")
         debugMessage("Profile: $profile")
@@ -90,10 +80,10 @@ abstract class SlangCompile @Inject constructor(
             .filter { it.changeType != ChangeType.REMOVED }
             .map { it.normalizedPath to it.file }
             .filter { (_, file) -> file.extension == "slang" }
-            .forEach { (path, file) ->
+            .mapNotNull { (path, file) ->
                 check(path.removeSuffix(".slang").length < path.length) { "File $file is not a .slang file" }
-                val outputFile = path.outputPath()
-                outputFile.parentFile.mkdirs()
+                val spvFile = path.outputPath()
+                spvFile.parentFile.mkdirs()
 
                 debugMessage("Compiling $file...")
                 execOperations.exec {
@@ -103,10 +93,21 @@ abstract class SlangCompile @Inject constructor(
                         "-target", target.optionName,
                     )
                     args(extraOptions)
-                    args(file.absolutePath, "-o", outputFile.path)
+                    args(file.absolutePath, "-o", spvFile.path)
+                }
+
+                didWork = true
+
+                if (generateReflectionInfo) {
+                    debugMessage("Generating reflection info for $spvFile...")
+                    val outputFile = spvFile.parentFile.resolve("${spvFile.nameWithoutExtension}.yaml")
+                    ProcessBuilder(spirvReflectPath, "-y", spvFile.path)
+                        .redirectOutput(ProcessBuilder.Redirect.to(outputFile))
+                        .start()
+                } else {
+                    null
                 }
             }
-
-        didWork = true
+            .forEach { it.waitFor() }
     }
 }
