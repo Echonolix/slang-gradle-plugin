@@ -74,7 +74,11 @@ abstract class SlangCompile @Inject constructor(
 
         fileChanges.asSequence()
             .filter { it.changeType == ChangeType.REMOVED }
-            .forEach { it.normalizedPath.outputPath().delete() }
+            .forEach {
+                val spvFile = it.normalizedPath.outputPath()
+                spvFile.delete()
+                spvFile.parentFile.resolve("${spvFile.nameWithoutExtension}.yaml").delete()
+            }
 
         fileChanges.asSequence()
             .filter { it.changeType != ChangeType.REMOVED }
