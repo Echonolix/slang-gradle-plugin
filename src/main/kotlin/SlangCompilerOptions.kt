@@ -1,11 +1,12 @@
 package net.echonolix.slang
 
-import org.gradle.api.Project
+import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
@@ -15,10 +16,7 @@ import org.gradle.api.tasks.PathSensitivity
 import javax.inject.Inject
 import kotlin.io.path.absolute
 
-abstract class SlangCompilerOptions {
-    @get:Inject
-    abstract val project: Project
-
+abstract class SlangCompilerOptions @Inject constructor(layout: ProjectLayout, providers: ProviderFactory) {
     /**
      * Slang release to download, for example `2026.19`. When set, `slangc` comes from the official GitHub
      * release archive verified against [compilerSha256], and [compilerExecutable] is ignored.
@@ -78,7 +76,7 @@ abstract class SlangCompilerOptions {
         debugLogging.convention(false)
         generateReflectionInfo.convention(false)
         spirVReflectExecutable.convention(
-            project.layout.file(project.provider {
+            layout.file(providers.provider {
                 findExecutableOnPath("spirv-reflect")?.absolute()?.toFile()
             })
         )
