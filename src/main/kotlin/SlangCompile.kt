@@ -1,16 +1,20 @@
 package net.echonolix.slang
 
+import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileTree
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import org.gradle.process.ExecOperations
 import org.gradle.work.ChangeType
+import org.gradle.work.DisableCachingByDefault
 import org.gradle.work.FileChange
 import org.gradle.work.InputChanges
 import org.gradle.work.NormalizeLineEndings
 import java.io.File
 import javax.inject.Inject
 
+@DisableCachingByDefault(because = "Cacheable only with a pinned compiler; a PATH compiler is not tracked")
 abstract class SlangCompile @Inject constructor(
     @get:Nested
     val compilerOptions: SlangCompilerOptions
@@ -20,6 +24,9 @@ abstract class SlangCompile @Inject constructor(
 
     @get:Inject
     abstract val execOperations: ExecOperations
+
+    @get:Internal
+    abstract val toolchainService: Property<SlangToolchainService>
 
     /**
      * {@inheritDoc}
@@ -52,13 +59,34 @@ abstract class SlangCompile @Inject constructor(
         doCompile(inputs.getFileChanges(stableSources).toList())
     }
 
+    private fun resolveCompiler(): File {
+        val version = compilerOptions.compilerVersion.orNull
+        if (version != null) {
+            val sha256 = compilerOptions.hostCompilerSha256.orNull
+                ?: throw GradleException(
+                    "Slang $version is pinned but compilerSha256 has no entry for host ${SlangHost.classifier}"
+                )
+            return toolchainService.get().slangc(version, sha256)
+        }
+        compilerOptions.compilerExecutable.orNull?.let { return it.asFile.absoluteFile }
+        return findExecutableOnPath("slangc")?.toFile()?.absoluteFile
+            ?: throw GradleException(
+                "slangc not found: set compilerVersion to download it, set compilerExecutable, or add slangc to PATH"
+            )
+    }
+
     private fun doCompile(fileChanges: List<FileChange>) {
-        val compilerExecutableFile = compilerOptions.compilerExecutable.get().asFile.absoluteFile
+        val compilerExecutableFile = resolveCompiler()
         val profile = compilerOptions.profile.get()
         val target = compilerOptions.target.get()
         val extraOptions = compilerOptions.extraOptions.get()
         val generateReflectionInfo = compilerOptions.generateReflectionInfo.get()
-        val spirvReflectPath = compilerOptions.spirVReflectExecutable.get().asFile.absolutePath
+        val spirvReflectPath = if (generateReflectionInfo) {
+            compilerOptions.spirVReflectExecutable.orNull?.asFile?.absolutePath
+                ?: throw GradleException("generateReflectionInfo needs spirv-reflect on PATH or spirVReflectExecutable")
+        } else {
+            ""
+        }
 
         debugMessage("Compiler: $compilerExecutableFile")
         debugMessage("Profile: $profile")

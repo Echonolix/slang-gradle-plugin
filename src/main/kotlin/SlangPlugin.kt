@@ -13,6 +13,7 @@ class SlangPlugin : Plugin<Project> {
 
         val extension = target.extensions.create<SlangExtension>("slang", target)
         val ideaModel = target.extensions.getByType(IdeaModel::class.java)
+        val slangToolchain = SlangToolchainService.register(target.gradle)
 
         target.sourceSets.configureEach {
             val slangSourceDirectorySet = target.objects.sourceDirectorySet("slang", "slang")
@@ -29,6 +30,10 @@ class SlangPlugin : Plugin<Project> {
 
             slangCompile.configure {
                 this.source(slangSourceDirectorySet)
+                toolchainService.set(slangToolchain)
+                usesService(slangToolchain)
+                val pinnedCompiler = compilerOptions.compilerVersion
+                outputs.cacheIf("a pinned compiler version is set") { pinnedCompiler.isPresent }
             }
 
             slangSourceDirectorySet.destinationDirectory.convention(target.layout.buildDirectory.dir("slang/${name}"))

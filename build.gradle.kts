@@ -1,6 +1,6 @@
 allprojects {
     group = "net.echonolix"
-    version = "0.0.1"
+    version = "0.1.0"
 
     repositories {
         mavenCentral()
@@ -16,7 +16,7 @@ plugins {
 java {
     withSourcesJar()
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
