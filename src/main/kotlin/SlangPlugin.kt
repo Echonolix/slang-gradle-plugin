@@ -4,7 +4,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.dependencies
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
 class SlangPlugin : Plugin<Project> {
@@ -39,9 +38,10 @@ class SlangPlugin : Plugin<Project> {
             slangSourceDirectorySet.destinationDirectory.convention(target.layout.buildDirectory.dir("slang/${name}"))
             slangSourceDirectorySet.compiledBy(slangCompile) { it.outputDir }
 
-            (target.tasks.findByName(jarTaskName) as Jar?)?.apply {
-                from(slangCompile.map { it.outputDir.asFileTree })
-            }
+            // Generated shaders are resources, not a private runtime configuration entry.
+            // The task-backed directory wires processResources, IDE source-set outputs,
+            // project dependency variants and jars to the same compiler outputs.
+            resources.srcDir(slangCompile.flatMap { it.outputDir })
 
             (target.tasks.findByName(sourcesJarTaskName) as Jar?)?.apply {
                 from(slangCompile.map { it.source.asFileTree })
@@ -49,10 +49,6 @@ class SlangPlugin : Plugin<Project> {
 
             (target.tasks.findByName(classesTaskName))?.apply {
                 dependsOn(slangCompile)
-            }
-
-            target.dependencies {
-                runtimeClasspathConfigurationName(slangCompile.map { target.files(it.outputDir.asFile) })
             }
 
             ideaModel.module {
